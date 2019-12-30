@@ -1,0 +1,22 @@
+<div class="container">
+    <div class="card shadow-lg mt-5">
+        <div class="card-header bg-success">
+            <h2>Subscription User List</h2>
+        </div>
+        <table class="border-success borders">
+            <thead>
+                <th>Email</th>
+                <th>Subscription Type</th>
+                <th>Password</th>
+            </thead>
+            <tbody>
+                <tr *ngFor="let SubUserValue of subscriptionValue">
+                    <td>{{SubUserValue.email}}</td>
+                    <td>{{SubUserValue.subscriptionType}}</td>
+                    <td>{{SubUserValue.password}}</td>
+
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
