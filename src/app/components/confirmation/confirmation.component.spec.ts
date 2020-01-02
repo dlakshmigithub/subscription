@@ -1,4 +1,5 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatDialogModule } from '@angular/material';
 
 import { ConfirmationComponent } from './confirmation.component';
 
@@ -8,6 +9,7 @@ describe('ConfirmationComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
+      imports:[MatDialogModule],
       declarations: [ ConfirmationComponent ]
     })
     .compileComponents();

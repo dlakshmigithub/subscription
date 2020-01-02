@@ -1,11 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators} from '@angular/forms';
-
+import { debounceTime } from 'rxjs/operators';
 import { MatDialog } from '@angular/material/dialog';
-
-import { SubscriptionType  } from '../../_model/subscriptionType';
-import { SubscriptionSaveService } from '../../_service/subscription-save.service';
+import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
+
+import { SubscriptionType, SubscriptionValidation, SubscriptionFields  } from '../../_model/subscriptionType';
+import { SubscriptionSaveService } from '../../_service/subscription-save.service';
 import { ConfirmationComponent } from '../confirmation/confirmation.component';
 
 @Component({
@@ -13,11 +14,16 @@ import { ConfirmationComponent } from '../confirmation/confirmation.component';
   templateUrl: './subscription-form.component.html',
   styleUrls: ['./subscription-form.component.scss']
 })
+
 export class SubscriptionFormComponent implements OnInit {
+  private subscriptions = new Subscription();
   subscriptionForm: FormGroup;
   submitted = false;
-  errors: string[] = [];
-
+  errorMessage = false;
+  typed: any = {};
+  emailError = false;
+  passwordError = false;
+  discard = false;
 
   public subValueType = new SubscriptionType();
   // pattern to validate the password entry.
@@ -32,83 +38,93 @@ export class SubscriptionFormComponent implements OnInit {
     this.validateForm();
   }
 
+   /**
+    * @description create FormGroup to define email, subscriptionType and password
+    * - form controls with required, maxLength and pattern validations.
+    * @param email string
+    * @param subscriptionType string
+    * @param password string
+    */
   validateForm() {
-
     this.subscriptionForm = this.fb.group({
-      email : ['', [Validators.required, Validators.maxLength(50), Validators.pattern(this.emailPattern)]],
+      email : ['', [Validators.required, Validators.maxLength(40), Validators.pattern(this.emailPattern)]],
       subscriptionType : ['', Validators.required],
-      password : ['', [Validators.required,  Validators.maxLength(50), Validators.pattern(this.passwordPattern)]]
+      password : ['', [Validators.required,  Validators.maxLength(25), Validators.pattern(this.passwordPattern)]]
     });
-
     this.subscriptionForm.get('subscriptionType').patchValue('Advanced');
-
-    this.subscriptionForm.statusChanges.subscribe(status => {
-      console.log('status');
-      console.log(status);
-      this.resetErrorMessages();
-      this.generateErrorMessages();
-    });
+    this.formValueChanges();
     }
 
-    resetErrorMessages() {
-    this.errors.length = 0;
-    }
+  // set debouncetime on form value changes to check - user stopped typing
+  formValueChanges() {
+    Object.keys(this.subscriptionForm.controls).forEach(key => {
+      this.subscriptions =  this.subscriptionForm.get(key).valueChanges.pipe(debounceTime(1000)).subscribe(() => {
+          this.typed[key] = true;
+          this.errorMessage = false;
+          this.submitted =  false;
+          /* set flag to show error message only when user stopped typing in the particular
+          field */
+          if (key !== 'email') {
+          this.emailError = true;
+          } else { this.emailError = false; }
+          if (key !== 'password') {
+          this.passwordError = true;
+        } else { this.passwordError = false; }
+          });
+      });
+  }
 
-
-
+  // helper function to check error condition
   hasError(controlName: string, validationName: string): boolean {
-      console.log(this.subscriptionForm.get(controlName));
-      console.log(this.subscriptionForm.get(controlName).hasError(validationName) &&
-      (this.subscriptionForm.get(controlName).touched || this.submitted));
-      return this.subscriptionForm.get(controlName).hasError(validationName) &&
-            (this.subscriptionForm.get(controlName).touched || this.submitted);
+    return this.subscriptionForm.get(controlName).hasError(validationName)
+           && (this.typed[controlName] || this.submitted);
   }
 
+  /**
+   * Method to save the subscription form entries
+   * Save the input Email, SubscriptionType and Password into subscription service if form is valid
+   * and navigate to subscription-list page.
+   * @Param email string
+   * @Param subscriptionType  string
+   * @param password string
+   * @See listsubscription with email, subscriptionType and password
+   */
 
-  generateErrorMessages() {
-    Object.keys(this.subscriptionForm.controls).forEach((controlName) => {
-      const control = this.subscriptionForm.controls[controlName];
-      const errors = control.errors;
-      if (errors === null || errors.count === 0) {
-        return true;
-      }
-      if (errors.required) {
-        this.errors.push(`${controlName} is required`);
-      }
-      if (errors.maxlength) {
-        this.errors.push(` Please enter ${controlName} with only 50 characters.`);
-      }
-      if (errors.pattern) {
-        this.errors.push(` Please  enter valid ${controlName}.`);
-      }
-    });
-  }
-
-    submitSubscription() {
-    console.log('camein');
-    if (this.subscriptionForm.valid) {
-      console.log('submitentere');
+  submitSubscription() {
       this.submitted = true;
-      this.subscriptionService.saveSubscriptionValue(this.subscriptionForm.value);
-      this.router.navigate(['/list-user-subscription']);
-    } else {
-
-     //  this.subscriptionForm.errors;
-    }
-
+      this.errorMessage = true;
+      if (this.subscriptionForm.valid) {
+       this.subscriptionService.saveSubscriptionValue(this.subscriptionForm.value);
+       this.router.navigate(['/list-user-subscription']);
+      } else {
+        this.formValueChanges();
+      }
   }
 
+  /**
+   * @description Method to reset the form.
+   * @param email string
+   * @param subscriptionType string
+   * @param password string
+   * @see subscription type set as Advanced; email and password will be cleared. *
+   */
   onDiscardConfirm(): void {
-
       const dialogRef = this.dialog.open(ConfirmationComponent, {  width: '300px', position: {
         top: '100px'
       }});
-      dialogRef.afterClosed().subscribe(result => {
+      this.subscriptions = dialogRef.afterClosed().subscribe(result => {
         if (result && result.confirmed) {
+          this.discard = true;
+          this.errorMessage = false;
+          this.submitted = false;
           this.subscriptionForm.reset();
           this.subscriptionForm.get('subscriptionType').patchValue('Advanced');
+          this.emailError = true;
+          this.passwordError = true;
+          this.subscriptions.unsubscribe();
+          this.subscriptionForm.get('email').markAsUntouched();
+          this.subscriptionForm.get('password').markAsUntouched();
         }
       });
     }
-
 }

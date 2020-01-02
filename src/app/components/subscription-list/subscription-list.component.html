@@ -1,22 +1,25 @@
 <div class="container">
-    <div class="card shadow-lg mt-5">
-        <div class="card-header bg-success">
-            <h2>Subscription User List</h2>
+    <div class="card shadow-lg mt-1">
+        <div class="card-header bg-color">
+            <h2 class="card-title text-white mb-0 text-size">Subscription List</h2>
         </div>
-        <table class="border-success borders">
-            <thead>
-                <th>Email</th>
-                <th>Subscription Type</th>
-                <th>Password</th>
-            </thead>
-            <tbody>
-                <tr *ngFor="let SubUserValue of subscriptionValue">
-                    <td>{{SubUserValue.email}}</td>
-                    <td>{{SubUserValue.subscriptionType}}</td>
-                    <td>{{SubUserValue.password}}</td>
-
-                </tr>
-            </tbody>
-        </table>
+        <div class="card-body align-self-center">
+            <table class="font width tbl-border table-bordered">
+                <thead class="thead-dark thead">
+                    <th>Email</th>
+                    <th>Subscription Type</th>
+                    <th>Password</th>
+                </thead>
+                <tbody class="font font-weight-light">
+                    <tr *ngFor="let SubUserValue of subscriptionValue">
+                        <td>{{SubUserValue.email}}</td>
+                        <td>{{SubUserValue.subscriptionType}}</td>
+                        <td>{{SubUserValue.password}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="nav-link"><button type="button" routerLink="/user-subscription">Back</button>
+        </div>
     </div>
 </div>
